@@ -7,21 +7,24 @@ SILVER = Path('lakehouse/silver')
 
 SILVER.mkdir(parents=True, exist_ok=True)
 
-# ── CARGA ───────────────────────────────────────────────
+# ── CARGA DE DATOS ──────────────────────────────────────
 archivos = list(BRONZE.glob('lecturas_sensores_*.parquet'))
 
 if not archivos:
     raise Exception("No hay archivos en Bronze")
 
-df = pd.concat([pd.read_parquet(f) for f in archivos], ignore_index=True)
+# Leer todos los archivos Bronze
+df_bronze = pd.concat([pd.read_parquet(f) for f in archivos], ignore_index=True)
 
-print(f"Filas en Bronze: {len(df)}")
+print(f"Filas totales en Bronze: {len(df_bronze)}")
+
+# Copia para transformación
+df = df_bronze.copy()
 
 # ── LIMPIEZA ────────────────────────────────────────────
 
-# 1. Eliminar columnas innecesarias (_id de Astra)
-if '_id' in df.columns:
-    df.drop(columns=['_id'], inplace=True)
+# 1. Eliminar columna técnica de Astra si existe
+df = df.drop(columns=['_id'], errors='ignore')
 
 # 2. Convertir timestamp
 df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
@@ -30,28 +33,57 @@ df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
 df = df.dropna(subset=['sensor_id', 'timestamp', 'valor'])
 
 # 4. Normalizar texto
-df['tipo_sensor'] = df['tipo_sensor'].str.lower().str.strip()
-df['nivel_alerta'] = df['nivel_alerta'].str.upper().str.strip()
+df['tipo_sensor'] = df['tipo_sensor'].astype(str).str.lower().str.strip()
+df['nivel_alerta'] = df['nivel_alerta'].astype(str).str.upper().str.strip()
 
-# 5. Eliminar duplicados
+# 5. Validación de valores (no negativos)
+df = df[df['valor'] >= 0]
+
+# 6. Clasificación automática de alerta (opcional pero recomendado)
+def clasificar_alerta(valor):
+    if valor > 80:
+        return "CRITICA"
+    elif valor > 60:
+        return "ADVERTENCIA"
+    else:
+        return "NORMAL"
+
+df['nivel_alerta_calculada'] = df['valor'].apply(clasificar_alerta)
+
+# 7. Eliminar duplicados
 df = df.drop_duplicates()
+
+# 8. Ordenar por tiempo
+df = df.sort_values(by='timestamp')
 
 # ── VALIDACIÓN ──────────────────────────────────────────
 
 print("\nResumen de calidad:")
 print(df.describe(include='all'))
 
-print("\nValores nulos:")
+print("\nValores nulos por columna:")
 print(df.isnull().sum())
 
-# ── GUARDAR ─────────────────────────────────────────────
-ruta = SILVER / 'lecturas_sensores_silver.parquet'
-df.to_parquet(ruta, index=False)
+# ── REPORTE DE CALIDAD ──────────────────────────────────
 
-print(f"\nSilver guardado en: {ruta}")
+filas_bronze = len(df_bronze)
+filas_silver = len(df)
 
-with open(SILVER / "reporte_calidad.txt", "w") as f:
-    f.write(f"Filas Bronze: {len(archivos)}\n")
-    f.write(f"Filas Silver: {len(df)}\n")
-    f.write("\nValores nulos:\n")
+reporte_path = SILVER / "reporte_calidad.txt"
+
+with open(reporte_path, "w") as f:
+    f.write("REPORTE DE CALIDAD\n")
+    f.write("=====================\n\n")
+    f.write(f"Filas en Bronze: {filas_bronze}\n")
+    f.write(f"Filas en Silver: {filas_silver}\n\n")
+    f.write("Valores nulos por columna:\n")
     f.write(str(df.isnull().sum()))
+
+print(f"\nReporte de calidad guardado en: {reporte_path}")
+
+# ── GUARDAR PARQUET ─────────────────────────────────────
+
+silver_path = SILVER / 'lecturas_sensores_silver.parquet'
+df.to_parquet(silver_path, index=False)
+
+print(f"\nSilver guardado en: {silver_path}")
