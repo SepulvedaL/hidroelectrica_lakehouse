@@ -3,43 +3,60 @@
 # Diseño Dimensional
 ## 1. ¿Cuál es el proceso de negocio que vamos a analizar?
 
-En nuestro proyecto decidimos enfocarnos en el proceso de monitoreo de sensores dentro de una central hidroeléctrica. Específicamente, analizamos el comportamiento de variables como temperatura, presión y caudal, registradas por distintos sensores instalados en las turbinas.
-El objetivo de este análisis es entender cómo se comportan estas variables a lo largo del tiempo, identificar patrones operativos y detectar posibles condiciones anómalas que puedan generar alertas o afectar el funcionamiento de la central.
+El proceso de negocio que analizamos es el monitoreo continuo de sensores industriales en una central hidroeléctrica. Este proceso es crítico para garantizar la operación segura y eficiente de las turbinas, ya que una falla no detectada a tiempo puede provocar paradas no planificadas, daños en los equipos y pérdidas económicas considerables.
+Los sensores registran de forma continua variables como temperatura, presión y caudal. 
+El flujo del proceso inicia con la captura de datos en los sensores, continúa con el procesamiento en tiempo real para evaluación de umbrales, generación de alertas y finaliza con el almacenamiento histórico que soporta análisis de tendencias y modelos predictivos.
+Dado el alto volumen de sensores activos (~10.000) y la frecuencia de muestreo, el sistema genera aproximadamente 85.000 eventos por segundo, lo que posiciona este caso como un escenario de Big Data de alta velocidad.
 
 ## 2. ¿Cuál es la granularidad?
 
-Definimos que la granularidad del modelo será una fila por cada lectura de sensor en un instante de tiempo específico.
-Esto significa que cada registro representa un evento atómico: una medición individual capturada por un sensor en un momento determinado. Esta decisión nos permite mantener el máximo nivel de detalle posible y posteriormente realizar agregaciones según sea necesario (por hora, día o turbina).
+La granularidad del modelo se define como una fila por cada lectura individual de sensor en un instante de tiempo específico, representando el nivel más fino de detalle posible.
+Cada registro es un evento atómico que contiene: sensor_id, timestamp, tipo_sensor y valor. La combinación de sensor_id + timestamp actúa como identificador único de cada evento.
+Cada sensor genera lecturas con una frecuencia aproximada de una por segundo, lo que con ~10.000 sensores activos produce cerca de 85.000 eventos por segundo, equivalente a ~7.3 mil millones de registros diarios y ~134 TB anuales.
+Se eligió esta granularidad, ya que el sistema requiere detectar anomalías en tiempo real. Agregar los datos desde la captura (por minuto o por hora) haría imposible identificar momentos críticos que ocurren en fracciones de segundo. Las agregaciones por hora, día o turbina se realizan en una capa posterior, en ClickHouse, sin sacrificar el detalle original que se tiene en Cassandra.
 
 ## 3. ¿Cuáles son las dimensiones?
 
 Para nuestro modelo definimos las siguientes dimensiones principales:
-
 DIM_TIEMPO
-Incluye atributos como fecha, año, mes, día, hora, día de la semana y si corresponde a fin de semana. Esta dimensión no cambia en el tiempo.
-
+Incluye atributos como tiempo_id, fecha, año, mes, día, hora, minuto, día de la semana y un indicador de fin de semana o festivo. Es una dimensión estática que no cambia una vez creada. Permite realizar análisis temporales con distintos niveles de agregación.
 DIM_SENSOR
-Contiene información del sensor, como su identificador, tipo de sensor (temperatura, presión, caudal), unidad de medida, ubicación y la turbina a la que está asociado. Esta dimensión puede cambiar en el tiempo, por ejemplo, si un sensor es reubicado o reasignado.
-
+Contiene sensor_id (surrogate key), tipo de sensor (temperatura, presión, caudal), unidad de medida, ubicación y la turbina asociada. Al ser una dimensión que puede cambiar en el tiempo (reubicación o reasignación del sensor), se clasifica como Slowly Changing Dimension (SCD) Tipo 2, lo que permite conservar el historial completo de cada sensor sin perder trazabilidad en las lecturas históricas.
 DIM_TURBINA
-Describe las turbinas de la central, incluyendo su identificador, nombre, capacidad y estado operativo (activa, en mantenimiento, etc.). Esta dimensión permite contextualizar las lecturas dentro del sistema físico de la hidroeléctrica.
+Describe las turbinas con atributos como turbina_id, nombre, capacidad instalada y estado operativo (activa, en mantenimiento, fuera de servicio). Puede tratarse como SCD Tipo 1 si solo interesa el estado actual, o SCD Tipo 2 si se requiere rastrear el historial de cambios de estado.
+DIM_ALERTA (dimensión sugerida)
+Clasificaría los niveles de alerta del sistema: BAJA, MEDIA, ALTA y CRÍTICA, junto con la descripción del umbral y la acción recomendada. Permitiría analizar la frecuencia y distribución de alertas por sensor, turbina o período de tiempo.
 
 ## 4. ¿Cuáles son las métricas (hechos)?
 
-Las métricas principales de nuestro modelo corresponden a los valores registrados por los sensores.
+Las métricas principales del modelo se almacenan en la tabla FACT_LECTURAS_SENSORES y se clasifican de la siguiente manera:
 
-Clasificamos estas métricas de la siguiente manera:
+Aditivas:
 
-Aditiva:
-El valor del sensor, ya que puede ser agregado a través de dimensiones como tiempo o sensor (por ejemplo, promedios o sumas según el caso de análisis).
+cantidad_alertas: número de alertas generadas en un período. Puede sumarse a través de todas las dimensiones (por turbina, por día, por tipo de sensor).
+duracion_anomalia: tiempo en segundos que un sensor permaneció fuera del umbral. Es sumable y permite calcular el tiempo total de condiciones críticas.
+desviacion_umbral: diferencia entre el valor medido y el umbral configurado, útil para medir la magnitud de una anomalía.
 
-No aditiva:
-El nivel de alerta asociado a una lectura, ya que no tiene sentido sumarlo y su análisis se realiza mediante conteos o clasificaciones.
+Semi-aditivas:
 
-Estas métricas permiten analizar tanto el comportamiento operativo como posibles anomalías dentro del sistema.
+valor_lectura: el valor registrado por el sensor (temperatura, presión, caudal). Puede agregarse mediante promedio o máximo a través de la dimensión tiempo, pero no tiene sentido sumarlo entre sensores de distinto tipo. Su agregación válida depende del tipo de variable física.
+
+No aditivas:
+
+nivel_alerta: clasificación categórica (BAJA, MEDIA, ALTA, CRÍTICA). No puede sumarse; su análisis se realiza mediante conteos, distribuciones o clasificaciones.
+
+Esta clasificación permite definir correctamente las operaciones de agregación aplicables en dashboards y reportes analíticos, evitando métricas sin sentido físico u operativo.
 
 ## 5. Estrategia SCD para al menos una dimensión
 
-Decidimos implementar una estrategia de Slowly Changing Dimension (SCD) Tipo 2 en la dimensión de sensores.
-Esto significa que cuando un sensor cambia algún atributo relevante, como su ubicación o la turbina a la que pertenece, no se actualiza el registro existente, sino que se crea uno nuevo. De esta forma, se conserva el historial completo de cambios.
-Esta estrategia nos permite analizar el comportamiento de un mismo sensor en diferentes contextos a lo largo del tiempo, lo cual es especialmente útil en escenarios donde la infraestructura puede cambiar o ser reconfigurada.
+Implementamos SCD Tipo 2 en la dimensión DIM_SENSOR, ya que los sensores pueden cambiar atributos relevantes como su ubicación física o la turbina a la que están asignados a lo largo del tiempo.
+Mecanismo de implementación:
+Cuando un sensor cambia, no se actualiza el registro existente. En su lugar, se cierra el registro anterior (asignando una fecha_fin) y se crea un nuevo registro con los datos actualizados. Los campos técnicos que hacen posible este mecanismo son:
+
+sensor_sk: Surrogate Key única por versión del registro
+sensor_id: Clave de negocio original (se repite entre versiones)
+fecha_inicio / fecha_fin: Rango de validez del registro
+es_activo: Indica si el registro corresponde al estado actual
+
+¿Por qué no SCD Tipo 1?
+Se descartó la sobreescritura porque eliminaría el historial de ubicaciones, imposibilitando analizar el comportamiento del sensor en contextos anteriores, lo cual es crítico y no es conveniente en un sistema de monitoreo a gran escala.
