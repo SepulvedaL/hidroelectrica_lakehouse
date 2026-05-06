@@ -1,0 +1,16 @@
+REPORTE DE CALIDAD
+=====================
+
+Filas en Bronze: 12
+Filas en Silver: 12
+
+Valores nulos por columna:
+sensor_id                 0
+nivel_alerta              0
+tipo_sensor               0
+valor                     0
+timestamp                 0
+_extraido_en              0
+_fuente                   0
+nivel_alerta_calculada    0
+dtype: int64
