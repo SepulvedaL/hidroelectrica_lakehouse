@@ -50,7 +50,7 @@ GROUP BY s.sensor_id
 
 end = time.time()
 
-print("1️. Promedio por sensor:")
+print("1. Promedio por sensor:")
 print(q1)
 
 registrar(
@@ -80,7 +80,7 @@ ORDER BY t.anio, t.mes, t.dia, t.hora
 
 end = time.time()
 
-print("\n2️. Lecturas por hora:")
+print("\n2. Lecturas por hora:")
 print(q2)
 
 registrar(
@@ -105,7 +105,7 @@ GROUP BY nivel_alerta
 
 end = time.time()
 
-print("\n3️. Conteo por nivel de alerta:")
+print("\n3. Conteo por nivel de alerta:")
 print(q3)
 
 registrar(
@@ -161,7 +161,7 @@ ORDER BY t.fecha_hora
 
 end = time.time()
 
-print("\n5️. Lecturas críticas:")
+print("\n5. Lecturas críticas:")
 print(q5)
 
 registrar(
