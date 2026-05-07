@@ -84,7 +84,7 @@ El sistema permite:
 - consultas analíticas
 - comparación de rendimiento entre Cassandra y DuckDB
 
-**Arquitectura del Proyecto**
+## Arquitectura del Proyecto
 
 Cassandra Astra  
 │  
@@ -117,7 +117,7 @@ Consultas Analíticas DuckDB
 
 **Clonar repositorio**
 
-git clone https://github.com/\[usuario\]/\[repositorio\]  
+git clone https://github.com/SepulvedaL/hidroelectrica_lakehouse.git
 cd \[repositorio\]
 
 **Crear entorno virtual**
@@ -153,8 +153,8 @@ python scripts/queries_gold.py
 
 python scripts/queries_cassandra.py
 
-Integrantes
+### Integrantes
 
-Luis Alberto Sepúlveda
+*Luis Alberto Sepúlveda*
 
-Juan David Díaz Montoya
+*Juan David Díaz Montoya*
