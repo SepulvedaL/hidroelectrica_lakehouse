@@ -154,7 +154,11 @@ python scripts/queries_gold.py
 
 python scripts/queries_cassandra.py
 
+<<<<<<< HEAD
 ### Resultados Benchmark
+=======
+Resultados Benchmark
+>>>>>>> 0508f06d75e5144b3a126c3f8014f4d4d03482f6
 
 | Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                                |
 | ------------------- | --------------------- | ---------- | ---------------------------------------------------------- |
@@ -164,7 +168,11 @@ python scripts/queries_cassandra.py
 | Promedio por tipo   | Agregación categórica | 0.0010     | Requiere procesamiento en cliente                          |
 | Eventos críticos    | Filtro                | 0.0010     | Consulta posible pero ineficiente sin índice               |
 
+<<<<<<< HEAD
 ### Resultados Queries Gold
+=======
+Resultados Queries Gold
+>>>>>>> 0508f06d75e5144b3a126c3f8014f4d4d03482f6
 
 | Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                       |
 | ------------------- | --------------------- | ---------- | ------------------------------------------------- |
