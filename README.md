@@ -118,10 +118,7 @@ Consultas Analíticas DuckDB
 **Clonar repositorio**
 
 git clone https://github.com/SepulvedaL/hidroelectrica_lakehouse.git
-<<<<<<< HEAD
 
-=======
->>>>>>> 7ae52620a3abd773efa0512f0553abb415cfc371
 cd \[repositorio\]
 
 **Crear entorno virtual**
@@ -156,6 +153,27 @@ python scripts/queries_gold.py
 **Comparación Cassandra vs DuckDB**
 
 python scripts/queries_cassandra.py
+
+### Resultados Benchmark
+
+| Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                                |
+| ------------------- | --------------------- | ---------- | ---------------------------------------------------------- |
+| Promedio por sensor | Agregación            | 0.0039     | Requiere procesamiento en memoria (no nativo en Cassandra) |
+| Lecturas por hora   | Agregación temporal   | 0.0050     | Transformación + agregación fuera de Cassandra             |
+| Conteo por alerta   | Agregación simple     | 0.0010     | No soportado directamente sin índices                      |
+| Promedio por tipo   | Agregación categórica | 0.0010     | Requiere procesamiento en cliente                          |
+| Eventos críticos    | Filtro                | 0.0010     | Consulta posible pero ineficiente sin índice               |
+
+### Resultados Queries Gold
+
+| Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                       |
+| ------------------- | --------------------- | ---------- | ------------------------------------------------- |
+| Promedio por sensor | Agregación            | 0.003964   | Agregación SQL ejecutada nativamente en DuckDB    |
+| Lecturas por hora   | Agregación temporal   | 0.003508   | Agrupación temporal optimizada en motor columnar  |
+| Conteo por alerta   | Agregación simple     | 0.002216   | Conteo ejecutado directamente sobre Parquet       |
+| Promedio por tipo   | Agregación categórica | 0.002537   | Consulta analítica con JOIN y GROUP BY            |
+| Eventos críticos    | Filtro                | 0.032177   | Filtro analítico ejecutado directamente en DuckDB |
+
 
 ### Integrantes
 
