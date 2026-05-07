@@ -60,3 +60,101 @@ es_activo: Indica si el registro corresponde al estado actual
 
 ¿Por qué no SCD Tipo 1?
 Se descartó la sobreescritura porque eliminaría el historial de ubicaciones, imposibilitando analizar el comportamiento del sensor en contextos anteriores, lo cual es crítico y no es conveniente en un sistema de monitoreo a gran escala.
+
+
+**Descripción del Proyecto:**
+
+Este proyecto implementa una arquitectura tipo **Lakehouse** para el procesamiento y análisis de datos provenientes de sensores de una central hidroeléctrica.
+
+La solución integra:
+
+- Cassandra Astra como almacenamiento operacional (OLTP)
+- DuckDB como motor analítico (OLAP)
+- Archivos Parquet como formato intermedio
+- Arquitectura Medallion teniendo en cuenta las capas que lo componen:
+    - Bronze
+    - Silver
+    - Gold
+
+El sistema permite:
+
+- ingestión de datos de sensores
+- limpieza y validación
+- construcción de modelo dimensional
+- consultas analíticas
+- comparación de rendimiento entre Cassandra y DuckDB
+
+**Arquitectura del Proyecto**
+
+Cassandra Astra  
+│  
+▼  
+Bronze (datos crudos Parquet)  
+│  
+▼  
+Silver (datos limpios y validados)  
+│  
+▼  
+Gold (modelo estrella)  
+│  
+▼  
+Consultas Analíticas DuckDB
+
+**Requisitos**
+
+|     |     |
+| --- | --- |
+| **Tecnología** | **Uso** |
+| Python | Desarrollo del pipeline |
+| Cassandra Astra | Base de Datos Operacional |
+| DuckDB | Motor analítico |
+| Pandas | Transformación de datos |
+| Parquet | Almacenamiento columnar |
+| Astrapy | Conexión con Astra |
+| DuckDB SQL | Consultas analíticas |
+
+**Ejecutar el pipeline completo**
+
+**Clonar repositorio**
+
+git clone https://github.com/\[usuario\]/\[repositorio\]  
+cd \[repositorio\]
+
+**Crear entorno virtual**
+
+python -m venv .venv  
+.venv\\Scripts\\activate
+
+**Instalar dependencias**
+
+pip install -r requirements.txt
+
+**Ejecutar pipeline Bronze**
+
+Ejecutar pipeline Bronze
+
+python scripts/extract.py
+
+**Ejecutar pipeline Silver**
+
+Ejecutar pipeline Silver
+
+python scripts/transform_silver.py
+
+**Ejecutar pipeline Gold**
+
+python scripts/transform_gold.py
+
+**Ejecutar consultas analíticas**
+
+python scripts/queries_gold.py
+
+**Comparación Cassandra vs DuckDB**
+
+python scripts/queries_cassandra.py
+
+Integrantes
+
+Luis Alberto Sepúlveda
+
+Juan David Díaz Montoya
