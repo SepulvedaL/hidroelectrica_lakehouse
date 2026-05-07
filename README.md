@@ -118,7 +118,10 @@ Consultas Analíticas DuckDB
 **Clonar repositorio**
 
 git clone https://github.com/SepulvedaL/hidroelectrica_lakehouse.git
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7ae52620a3abd773efa0512f0553abb415cfc371
 cd \[repositorio\]
 
 **Crear entorno virtual**
