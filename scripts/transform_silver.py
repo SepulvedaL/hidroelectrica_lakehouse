@@ -21,6 +21,7 @@ print(f"Filas totales en Bronze: {len(df_bronze)}")
 # Copia para transformación
 df = df_bronze.copy()
 
+
 # ── LIMPIEZA ────────────────────────────────────────────
 
 # 1. Eliminar columna técnica de Astra si existe
@@ -62,7 +63,7 @@ print("\nResumen de calidad:")
 print(df.describe(include='all'))
 
 print("\nValores nulos por columna:")
-print(df.isnull().sum())
+print(df_bronze.isnull().sum())
 
 # ── REPORTE DE CALIDAD ──────────────────────────────────
 
@@ -77,7 +78,7 @@ with open(reporte_path, "w") as f:
     f.write(f"Filas en Bronze: {filas_bronze}\n")
     f.write(f"Filas en Silver: {filas_silver}\n\n")
     f.write("Valores nulos por columna:\n")
-    f.write(str(df.isnull().sum()))
+    f.write(str(df_bronze.isnull().sum()))
 
 print(f"\nReporte de calidad guardado en: {reporte_path}")
 
