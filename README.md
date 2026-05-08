@@ -154,33 +154,25 @@ python scripts/queries_gold.py
 
 python scripts/queries_cassandra.py
 
-<<<<<<< HEAD
 ### Resultados Benchmark
-=======
-Resultados Benchmark
->>>>>>> 0508f06d75e5144b3a126c3f8014f4d4d03482f6
 
 | Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                                |
 | ------------------- | --------------------- | ---------- | ---------------------------------------------------------- |
-| Promedio por sensor | Agregación            | 0.0039     | Requiere procesamiento en memoria (no nativo en Cassandra) |
-| Lecturas por hora   | Agregación temporal   | 0.0050     | Transformación + agregación fuera de Cassandra             |
-| Conteo por alerta   | Agregación simple     | 0.0010     | No soportado directamente sin índices                      |
+| Promedio por sensor | Agregación            | 0.0010     | Requiere procesamiento en memoria (no nativo en Cassandra) |
+| Lecturas por hora   | Agregación temporal   | 0.0020     | Transformación + agregación fuera de Cassandra             |
+| Conteo por alerta   | Agregación simple     | 0.0015     | No soportado directamente sin índices                      |
 | Promedio por tipo   | Agregación categórica | 0.0010     | Requiere procesamiento en cliente                          |
-| Eventos críticos    | Filtro                | 0.0010     | Consulta posible pero ineficiente sin índice               |
+| Eventos críticos    | Filtro                | 0.0000     | Consulta posible pero ineficiente sin índice               |
 
-<<<<<<< HEAD
 ### Resultados Queries Gold
-=======
-Resultados Queries Gold
->>>>>>> 0508f06d75e5144b3a126c3f8014f4d4d03482f6
 
 | Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                       |
 | ------------------- | --------------------- | ---------- | ------------------------------------------------- |
-| Promedio por sensor | Agregación            | 0.003964   | Agregación SQL ejecutada nativamente en DuckDB    |
-| Lecturas por hora   | Agregación temporal   | 0.003508   | Agrupación temporal optimizada en motor columnar  |
-| Conteo por alerta   | Agregación simple     | 0.002216   | Conteo ejecutado directamente sobre Parquet       |
+| Promedio por sensor | Agregación            | 0.004025   | Agregación SQL ejecutada nativamente en DuckDB    |
+| Lecturas por hora   | Agregación temporal   | 0.006005   | Agrupación temporal optimizada en motor columnar  |
+| Conteo por alerta   | Agregación simple     | 0.002002   | Conteo ejecutado directamente sobre Parquet       |
 | Promedio por tipo   | Agregación categórica | 0.002537   | Consulta analítica con JOIN y GROUP BY            |
-| Eventos críticos    | Filtro                | 0.032177   | Filtro analítico ejecutado directamente en DuckDB |
+| Eventos críticos    | Filtro                | 0.028709   | Filtro analítico ejecutado directamente en DuckDB |
 
 
 ### Integrantes
