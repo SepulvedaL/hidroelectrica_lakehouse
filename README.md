@@ -154,6 +154,10 @@ python scripts/queries_gold.py
 
 python scripts/queries_cassandra.py
 
+**Podemos ejecutar el Pipeline main.py y así obtener el resultado en cadena**
+
+python main.py
+
 ### Resultados Benchmark
 
 | Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                                |
