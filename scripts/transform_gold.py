@@ -65,8 +65,8 @@ metr = con.execute(f"""
     ON d.sensor_id = s.sensor_id
 """).fetchdf()
  
-metr.to_parquet(GOLD / 'metr_lecturas.parquet', index=False)
+metr.to_parquet(GOLD / 'fact_lecturas.parquet', index=False)
  
-print(f"metr_lecturas: {len(metr)} filas")
+print(f"fact_lecturas: {len(metr)} filas")
  
 print("\nGOLD generado correctamente")

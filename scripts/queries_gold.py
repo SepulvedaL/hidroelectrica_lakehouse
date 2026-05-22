@@ -8,7 +8,7 @@ con = duckdb.connect()
 # ── CARGAR TABLAS GOLD ───────────────────────────────────
 con.execute("""
 CREATE OR REPLACE VIEW fact AS 
-SELECT * FROM read_parquet('lakehouse/gold/metr_lecturas.parquet')
+SELECT * FROM read_parquet('lakehouse/gold/fact_lecturas.parquet')
 """)
 
 con.execute("""
