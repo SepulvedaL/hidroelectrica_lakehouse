@@ -12,7 +12,8 @@ PIPELINE = [
     "transform_silver.py",
     "transform_gold.py",
     "queries_gold.py",
-    "benchmark.py"
+    "benchmark.py",
+    "dashboard.py"
 ]
 
 # ── FUNCIONES ───────────────────────────────────────────
