@@ -62,122 +62,398 @@ es_activo: Indica si el registro corresponde al estado actual
 Se descartó la sobreescritura porque eliminaría el historial de ubicaciones, imposibilitando analizar el comportamiento del sensor en contextos anteriores, lo cual es crítico y no es conveniente en un sistema de monitoreo a gran escala.
 
 
-**Descripción del Proyecto:**
+# Descripción General
 
-Este proyecto implementa una arquitectura tipo **Lakehouse** para el procesamiento y análisis de datos provenientes de sensores de una central hidroeléctrica.
+Este proyecto implementa una arquitectura Lakehouse para el análisis de datos provenientes de sensores de una hidroeléctrica.
 
 La solución integra:
 
-- Cassandra Astra como almacenamiento operacional (OLTP)
-- DuckDB como motor analítico (OLAP)
-- Archivos Parquet como formato intermedio
-- Arquitectura Medallion teniendo en cuenta las capas que lo componen:
-    - Bronze
-    - Silver
-    - Gold
+- Cassandra Astra DB como fuente operacional.
+- Arquitectura Medallion (Bronze, Silver, Gold).
+- DuckDB como motor OLAP.
+- Parquet como formato columnar.
+- Python para orquestación y transformación.
 
-El sistema permite:
+El objetivo principal fue comparar el comportamiento de Cassandra frente a DuckDB en consultas analíticas y demostrar cómo un Lakehouse mejora el rendimiento para escenarios OLAP.
 
-- ingestión de datos de sensores
-- limpieza y validación
-- construcción de modelo dimensional
-- consultas analíticas
-- comparación de rendimiento entre Cassandra y DuckDB
+---
 
-## Arquitectura del Proyecto
+# Arquitectura del Proyecto
 
-Cassandra Astra  
-│  
-▼  
-Bronze (datos crudos Parquet)  
-│  
-▼  
-Silver (datos limpios y validados)  
-│  
-▼  
-Gold (modelo estrella)  
-│  
-▼  
-Consultas Analíticas DuckDB
+```text
+┌────────────────────┐
+│  Cassandra Astra   │
+│  (Datos Sensores)  │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│      Bronze        │
+│ Extracción Raw     │
+│ Archivos Parquet   │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│      Silver        │
+│ Limpieza Calidad   │
+│ Normalización      │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│       Gold         │
+│ Modelo Estrella    │
+│ Hechos + Dim       │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│      DuckDB        │
+│ Consultas OLAP     │
+│ Dashboard          │
+└────────────────────┘
+```
 
-**Requisitos**
+---
 
-|     |     |
-| --- | --- |
-| **Tecnología** | **Uso** |
-| Python | Desarrollo del pipeline |
-| Cassandra Astra | Base de Datos Operacional |
-| DuckDB | Motor analítico |
+# Modelo de Datos
+
+## Tabla Sensor
+
+Representa el ciclo de vida de los sensores utilizando Slowly Changing Dimension (SCD).
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| id | INT | Identificador del sensor |
+| fecha_inicio | TIMESTAMP | Fecha inicio operación |
+| fecha_final | TIMESTAMP | Fecha fin operación |
+| sensor_scd | INT | Sensor reemplazo |
+
+---
+
+## Tabla Lecturas Sensores
+
+Tabla operacional que almacena las lecturas generadas por cada sensor.
+
+| Campo | Tipo |
+|---|---|
+| sensor_id | INT |
+| timestamp | TIMESTAMP |
+| tipo_sensor | TEXT |
+| valor | DOUBLE |
+| nivel_alerta | TEXT |
+
+---
+
+# Tecnologías Utilizadas
+
+| Tecnología | Uso |
+|---|---|
+| Cassandra Astra DB | Base operacional NoSQL |
+| DuckDB | Motor analítico OLAP |
+| Python | ETL y automatización |
 | Pandas | Transformación de datos |
-| Parquet | Almacenamiento columnar |
-| Astrapy | Conexión con Astra |
-| DuckDB SQL | Consultas analíticas |
+| Parquet | Formato columnar |
+| VSCode | Desarrollo |
 
-**Ejecutar el pipeline completo**
+---
 
-**Clonar repositorio**
+# Estructura del Proyecto
 
-git clone https://github.com/SepulvedaL/hidroelectrica_lakehouse.git
+```text
+hidroelectrica_lakehouse/
+│
+├── lakehouse/
+│   ├── bronze/
+│   ├── silver/
+│   └── gold/
+│
+├── scripts/
+│   ├── bronze.py
+│   ├── silver.py
+│   ├── gold.py
+│   ├── queries_gold.py
+│   ├── queries_cassandra.py
+│   └── main.py
+│
+├── dashboards/
+├── README.md
+└── requirements.txt
+```
 
-cd \[repositorio\]
+---
 
-**Crear entorno virtual**
+# Pipeline Medallion
 
-python -m venv .venv  
-.venv\\Scripts\\activate
+## Bronze
 
-**Instalar dependencias**
+En esta etapa se realiza:
 
+- Extracción desde Astra DB.
+- Almacenamiento raw.
+- Conversión a Parquet.
+- Preservación de datos sucios.
+
+### Características
+
+- No se eliminan errores.
+- Se preservan nulos.
+- Se conserva la trazabilidad.
+
+---
+
+## Silver
+
+En esta etapa se realiza:
+
+- Limpieza de nulos.
+- Validación de rangos.
+- Normalización de alertas.
+- Creación de reporte de calidad.
+
+### Validaciones
+
+| Tipo Sensor | Rango Válido |
+|---|---|
+| temperatura | 50 - 100 |
+| presion | 20 - 80 |
+| vibracion | 1 - 15 |
+| nivel_agua | 10 - 35 |
+
+### Salidas
+
+- `lecturas_sensores_silver.parquet`
+- `reporte_calidad.txt`
+
+---
+
+## Gold
+
+En esta etapa se construye:
+
+- Modelo estrella.
+- Tabla de hechos.
+- Dimensiones.
+- Consultas OLAP.
+
+### Tablas Generadas
+
+| Tabla |
+|---|
+| fact_lecturas |
+| dim_sensor |
+| dim_tiempo |
+
+---
+
+# Generación Masiva de Datos
+
+Se implementó un generador masivo de datos capaz de producir:
+
+- 600.000 registros.
+- Datos limpios.
+- Datos nulos.
+- Datos fuera de rango.
+- Sensores SCD.
+- Reemplazos históricos.
+
+### Características
+
+- Distribución temporal entre 2025 y 2026.
+- Inserción masiva en Astra DB.
+- Simulación realista de sensores.
+- Alertas críticas y advertencias.
+
+---
+
+# Comparación Cassandra vs DuckDB
+
+## Resultados Cassandra
+
+| Consulta | Tipo Consulta | Tiempo (s) | Descripción |
+|---|---|---|---|
+| Promedio por sensor | Agregación | 0.001 | Requiere procesamiento en memoria |
+| Lecturas por hora | Agregación temporal | 0.002 | Transformación fuera de Cassandra |
+| Conteo por alerta | Agregación simple | 0.0015 | No soportado directamente |
+| Promedio por tipo | Agregación categórica | 0.001 | Procesamiento en cliente |
+| Eventos críticos | Filtro | 0.0 | Consulta limitada |
+
+---
+
+## Resultados DuckDB
+
+| Consulta | Tipo Consulta | Tiempo (s) | Descripción |
+|---|---|---|---|
+| Promedio por sensor | Agregación | 0.004025 | Agregación OLAP nativa |
+| Lecturas por hora | Agregación temporal | 0.006005 | Optimización columnar |
+| Conteo por alerta | Agregación simple | 0.002002 | Lectura directa Parquet |
+| Promedio por tipo | Agregación categórica | 0.002537 | JOIN + GROUP BY |
+| Eventos críticos | Filtro | 0.028709 | Filtro analítico |
+
+---
+
+# EXPLAIN ANALYZE en DuckDB
+
+Se realizaron análisis detallados de planes de ejecución para identificar:
+
+- Hash Joins.
+- Group By.
+- ORDER BY.
+- Data Skipping.
+- Lecturas Parquet.
+- Optimización columnar.
+
+---
+
+## Consulta Q1
+
+Promedio mensual de lecturas.
+
+### Operadores Detectados
+
+- HASH_JOIN
+- PERFECT_HASH_GROUP_BY
+- ORDER_BY
+- READ_PARQUET
+
+### Resultado
+
+DuckDB ejecutó la agregación directamente sobre archivos Parquet sin necesidad de importar los datos.
+
+---
+
+## Consulta Q2
+
+Alertas críticas por sensor.
+
+### Problema Detectado
+
+Existía un CAST implícito entre `sensor_sk`.
+
+### Solución
+
+Se homologaron tipos `int32`.
+
+### Resultado
+
+Eliminación de conversiones innecesarias.
+
+---
+
+## Consulta Q3
+
+Resumen diario de sensores.
+
+### Características
+
+- Doble JOIN.
+- Agregaciones.
+- MAX/MIN.
+- Filtros temporales.
+
+### Resultado
+
+Excelente rendimiento OLAP incluso con múltiples agregaciones.
+
+---
+
+# Intervenciones Aplicadas
+
+## Intervención I-3
+
+### Objetivo
+
+Ordenar `fact_lecturas` por `tiempo_sk`.
+
+### Beneficio
+
+Activación de Data Skipping.
+
+### Resultado
+
+Reducción de bloques leídos.
+
+---
+
+## Intervención I-4
+
+### Objetivo
+
+Corregir tipos entre dimensiones y hechos.
+
+### Beneficio
+
+Eliminar CAST implícitos.
+
+### Resultado
+
+Mejoras en HASH_JOIN.
+
+---
+
+# Resultados Finales
+
+| Query | Antes | Después | Mejora |
+|---|---|---|---|
+| Q1 | 19.88 ms | 3.32 ms | 5.98x |
+| Q2 | 13.59 ms | 2.20 ms | 6.17x |
+| Q3 | 21.92 ms | 3.87 ms | 5.66x |
+
+---
+
+# Dashboard Analítico
+
+Se construyó un dashboard básico utilizando DuckDB y consultas analíticas.
+
+### Visualizaciones
+
+- Promedio por sensor.
+- Alertas críticas.
+- Tendencia temporal.
+- Distribución de sensores.
+
+---
+
+# Conclusiones
+
+- Cassandra funciona correctamente para cargas operacionales y almacenamiento distribuido.
+- DuckDB ofrece un rendimiento superior para cargas analíticas OLAP.
+- El formato Parquet mejora significativamente la eficiencia.
+- La arquitectura Medallion facilita la calidad y gobernanza.
+- Las optimizaciones físicas impactan directamente el rendimiento.
+- DuckDB demostró ser ideal para análisis locales de alto rendimiento.
+
+---
+
+# Ejecución del Proyecto
+
+## Instalar dependencias
+
+```bash
 pip install -r requirements.txt
+```
 
-**Ejecutar pipeline Bronze**
+## Ejecutar generador de datos
 
-Ejecutar pipeline Bronze
+```bash
+python data_cassandra.py
+```
 
-python scripts/extract.py
+## Ejecutar pipeline completo
 
-**Ejecutar pipeline Silver**
-
-Ejecutar pipeline Silver
-
-python scripts/transform_silver.py
-
-**Ejecutar pipeline Gold**
-
-python scripts/transform_gold.py
-
-**Ejecutar consultas analíticas**
-
-python scripts/queries_gold.py
-
-**Comparación Cassandra vs DuckDB**
-
-python scripts/queries_cassandra.py
-
-**Podemos ejecutar el Pipeline main.py y así obtener el resultado en cadena**
-
+```bash
 python main.py
+```
 
-### Resultados Benchmark
+---
 
-| Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                                |
-| ------------------- | --------------------- | ---------- | ---------------------------------------------------------- |
-| Promedio por sensor | Agregación            | 0.0010     | Requiere procesamiento en memoria (no nativo en Cassandra) |
-| Lecturas por hora   | Agregación temporal   | 0.0020     | Transformación + agregación fuera de Cassandra             |
-| Conteo por alerta   | Agregación simple     | 0.0015     | No soportado directamente sin índices                      |
-| Promedio por tipo   | Agregación categórica | 0.0010     | Requiere procesamiento en cliente                          |
-| Eventos críticos    | Filtro                | 0.0000     | Consulta posible pero ineficiente sin índice               |
+### Para revisar los diagnosticos de consultas debemos ejecutar de forma indepediente cada archivo, dado que no esta incluido en el pipeline
 
-### Resultados Queries Gold
-
-| Consulta            | Tipo de consulta      | Tiempo (s) | Descripción                                       |
-| ------------------- | --------------------- | ---------- | ------------------------------------------------- |
-| Promedio por sensor | Agregación            | 0.004025   | Agregación SQL ejecutada nativamente en DuckDB    |
-| Lecturas por hora   | Agregación temporal   | 0.006005   | Agrupación temporal optimizada en motor columnar  |
-| Conteo por alerta   | Agregación simple     | 0.002002   | Conteo ejecutado directamente sobre Parquet       |
-| Promedio por tipo   | Agregación categórica | 0.002537   | Consulta analítica con JOIN y GROUP BY            |
-| Eventos críticos    | Filtro                | 0.028709   | Filtro analítico ejecutado directamente en DuckDB |
-
+```bash
+python diagnostico_baseline.py
+python intervenciones.py
+```
 
 ### Integrantes
 
