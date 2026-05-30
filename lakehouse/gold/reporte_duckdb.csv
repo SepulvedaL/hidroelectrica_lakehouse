@@ -1,6 +1,6 @@
 consulta,tipo_consulta,tiempo_segundos,descripcion
-Promedio por sensor,Agregación,0.014267,Agregación SQL ejecutada nativamente en DuckDB
-Lecturas por hora,Agregación temporal,0.023443,Agrupación temporal optimizada en motor columnar
-Conteo por alerta,Agregación simple,0.003874,Conteo ejecutado directamente sobre Parquet
-Promedio por tipo,Agregación categórica,0.007901,Consulta analítica con JOIN y GROUP BY
-Eventos críticos,Filtro,0.070613,Filtro analítico ejecutado directamente en DuckDB
+Promedio por sensor,Agregación,0.004878,Agregación SQL ejecutada nativamente en DuckDB
+Lecturas por hora,Agregación temporal,0.006954,Agrupación temporal optimizada en motor columnar
+Conteo por alerta,Agregación simple,0.002898,Conteo ejecutado directamente sobre Parquet
+Promedio por tipo,Agregación categórica,0.004998,Consulta analítica con JOIN y GROUP BY
+Eventos críticos,Filtro,0.047,Filtro analítico ejecutado directamente en DuckDB

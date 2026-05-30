@@ -1,6 +1,6 @@
 consulta,tipo_consulta,tiempo_segundos,descripcion
-Promedio por sensor,Agregación,0.003,Requiere procesamiento en memoria (no nativo en Cassandra)
-Lecturas por hora,Agregación temporal,0.0627,Transformación + agregación fuera de Cassandra
-Conteo por alerta,Agregación simple,0.0052,No soportado directamente sin índices
-Promedio por tipo,Agregación categórica,0.0022,Requiere procesamiento en cliente
-Eventos críticos,Filtro,0.0029,Consulta posible pero ineficiente sin índice
+Promedio por sensor,Agregación,0.002,Requiere procesamiento en memoria (no nativo en Cassandra)
+Lecturas por hora,Agregación temporal,0.0194,Transformación + agregación fuera de Cassandra
+Conteo por alerta,Agregación simple,0.002,No soportado directamente sin índices
+Promedio por tipo,Agregación categórica,0.002,Requiere procesamiento en cliente
+Eventos críticos,Filtro,0.001,Consulta posible pero ineficiente sin índice

@@ -1,0 +1,494 @@
+================================================================================
+REPORTE DE INTERVENCIONES - DUCKDB
+================================================================================
+
+INTERVENCIONES APLICADAS
+--------------------------------------------------------------------------------
+I-3: fact_lecturas ordenado por tiempo_sk (1,000 filas)
+I-4: dim_sensor corregido (sensor_sk y sensor_id -> int32)
+Tipos finales: {'sensor_id': dtype('int32'), 'tipo_sensor': dtype('O'), 'sensor_sk': dtype('int32')}
+
+================================================================================
+PLANES DE EJECUCIÓN DESPUÉS DE INTERVENCIONES
+================================================================================
+
+--------------------------------------------------------------------------------
+Q1 - Promedio mensual 2024
+--------------------------------------------------------------------------------
+
+┌─────────────────────────────────────┐
+│┌───────────────────────────────────┐│
+││    Query Profiling Information    ││
+│└───────────────────────────────────┘│
+└─────────────────────────────────────┘
+EXPLAIN ANALYZE  SELECT t.anio, t.mes,        AVG(f.valor) AS promedio_valor,        COUNT(*) AS total_lecturas FROM read_parquet('lakehouse/gold/fact_lecturas.parquet') f JOIN read_parquet('lakehouse/gold/dim_tiempo.parquet') t   ON f.tiempo_sk = t.tiempo_sk WHERE t.anio = 2024 GROUP BY t.anio, t.mes ORDER BY t.mes 
+┌────────────────────────────────────────────────┐
+│┌──────────────────────────────────────────────┐│
+││              Total Time: 0.0203s             ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌───────────────────────────┐
+│           QUERY           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│      EXPLAIN_ANALYZE      │
+│    ────────────────────   │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│__internal_decompress_integ│
+│    ral_bigint(#0, 2025)   │
+│__internal_decompress_integ│
+│     ral_bigint(#1, 8)     │
+│             #2            │
+│             #3            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│          ORDER_BY         │
+│    ────────────────────   │
+│         t.mes ASC         │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│__internal_compress_integra│
+│    l_utinyint(#0, 2025)   │
+│__internal_compress_integra│
+│     l_utinyint(#1, 8)     │
+│             #2            │
+│             #3            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│__internal_decompress_integ│
+│    ral_bigint(#0, 2025)   │
+│__internal_decompress_integ│
+│     ral_bigint(#1, 8)     │
+│             #2            │
+│             #3            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│   PERFECT_HASH_GROUP_BY   │
+│    ────────────────────   │
+│          Groups:          │
+│             #0            │
+│             #1            │
+│                           │
+│        Aggregates:        │
+│          avg(#2)          │
+│        count_star()       │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│            anio           │
+│            mes            │
+│           valor           │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│             #0            │
+│__internal_compress_integra│
+│    l_utinyint(#1, 2025)   │
+│__internal_compress_integra│
+│     l_utinyint(#2, 8)     │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         HASH_JOIN         │
+│    ────────────────────   │
+│      Join Type: INNER     │
+│                           │
+│        Conditions:        │
+│   tiempo_sk = tiempo_sk   ├──────────────┐
+│                           │              │
+│                           │              │
+│                           │              │
+│           0 rows          │              │
+│           0.00s           │              │
+└─────────────┬─────────────┘              │
+┌─────────────┴─────────────┐┌─────────────┴─────────────┐
+│         TABLE_SCAN        ││        EMPTY_RESULT       │
+│    ────────────────────   ││    ────────────────────   │
+│         Function:         ││                           │
+│        READ_PARQUET       ││                           │
+│                           ││           0.00s           │
+│        Projections:       ││                           │
+│         tiempo_sk         ││                           │
+│           valor           ││                           │
+│                           ││                           │
+│                           ││                           │
+│                           ││                           │
+│         1,000 rows        ││           0 rows          │
+│           0.00s           ││          (0.00s)          │
+└───────────────────────────┘└───────────────────────────┘
+
+
+
+--------------------------------------------------------------------------------
+Q2 - Alertas criticas por sensor
+--------------------------------------------------------------------------------
+
+┌─────────────────────────────────────┐
+│┌───────────────────────────────────┐│
+││    Query Profiling Information    ││
+│└───────────────────────────────────┘│
+└─────────────────────────────────────┘
+EXPLAIN ANALYZE  SELECT s.tipo_sensor,        f.nivel_alerta,        COUNT(*) AS total,        AVG(f.valor) AS promedio FROM read_parquet('lakehouse/gold/fact_lecturas.parquet') f JOIN read_parquet('lakehouse/gold/dim_sensor.parquet') s   ON f.sensor_sk = s.sensor_sk WHERE f.nivel_alerta = 'critico' GROUP BY s.tipo_sensor, f.nivel_alerta ORDER BY total DESC 
+┌────────────────────────────────────────────────┐
+│┌──────────────────────────────────────────────┐│
+││              Total Time: 0.0175s             ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌───────────────────────────┐
+│           QUERY           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│      EXPLAIN_ANALYZE      │
+│    ────────────────────   │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│          ORDER_BY         │
+│    ────────────────────   │
+│     count_star() DESC     │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│       HASH_GROUP_BY       │
+│    ────────────────────   │
+│          Groups:          │
+│             #0            │
+│             #1            │
+│                           │
+│        Aggregates:        │
+│        count_star()       │
+│          avg(#2)          │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│        tipo_sensor        │
+│        nivel_alerta       │
+│           valor           │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         HASH_JOIN         │
+│    ────────────────────   │
+│      Join Type: INNER     │
+│                           │
+│        Conditions:        │
+│ sensor_sk = CAST(sensor_sk│
+│         AS BIGINT)        ├──────────────┐
+│                           │              │
+│                           │              │
+│                           │              │
+│           0 rows          │              │
+│           0.00s           │              │
+└─────────────┬─────────────┘              │
+┌─────────────┴─────────────┐┌─────────────┴─────────────┐
+│        EMPTY_RESULT       ││         TABLE_SCAN        │
+│    ────────────────────   ││    ────────────────────   │
+│                           ││         Function:         │
+│                           ││        READ_PARQUET       │
+│           0.00s           ││                           │
+│                           ││        Projections:       │
+│                           ││         sensor_sk         │
+│                           ││        tipo_sensor        │
+│                           ││                           │
+│                           ││    Total Files Read: 1    │
+│                           ││                           │
+│                           ││        Filename(s):       │
+│                           ││ lakehouse/gold/dim_sensor │
+│                           ││          .parquet         │
+│                           ││                           │
+│                           ││                           │
+│                           ││                           │
+│           0 rows          ││           1 row           │
+│          (0.00s)          ││           0.00s           │
+└───────────────────────────┘└───────────────────────────┘
+
+
+
+--------------------------------------------------------------------------------
+Q3 - Resumen diario junio 2023
+--------------------------------------------------------------------------------
+
+┌─────────────────────────────────────┐
+│┌───────────────────────────────────┐│
+││    Query Profiling Information    ││
+│└───────────────────────────────────┘│
+└─────────────────────────────────────┘
+EXPLAIN ANALYZE  SELECT t.anio,        t.mes,        t.dia,        s.tipo_sensor,        MAX(f.valor) AS max_valor,        MIN(f.valor) AS min_valor,        COUNT(*) AS lecturas_dia FROM read_parquet('lakehouse/gold/fact_lecturas.parquet') f JOIN read_parquet('lakehouse/gold/dim_tiempo.parquet') t   ON f.tiempo_sk = t.tiempo_sk JOIN read_parquet('lakehouse/gold/dim_sensor.parquet') s   ON f.sensor_sk = s.sensor_sk WHERE t.anio = 2023   AND t.mes = 6 GROUP BY     t.anio,     t.mes,     t.dia,     s.tipo_sensor ORDER BY     t.dia,     s.tipo_sensor 
+┌────────────────────────────────────────────────┐
+│┌──────────────────────────────────────────────┐│
+││              Total Time: 0.0055s             ││
+│└──────────────────────────────────────────────┘│
+└────────────────────────────────────────────────┘
+┌───────────────────────────┐
+│           QUERY           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│      EXPLAIN_ANALYZE      │
+│    ────────────────────   │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│__internal_decompress_integ│
+│    ral_bigint(#0, 2025)   │
+│__internal_decompress_integ│
+│     ral_bigint(#1, 8)     │
+│__internal_decompress_integ│
+│     ral_bigint(#2, 2)     │
+│             #3            │
+│             #4            │
+│             #5            │
+│             #6            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│          ORDER_BY         │
+│    ────────────────────   │
+│         t.dia ASC         │
+│     s.tipo_sensor ASC     │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│__internal_compress_integra│
+│    l_utinyint(#0, 2025)   │
+│__internal_compress_integra│
+│     l_utinyint(#1, 8)     │
+│__internal_compress_integra│
+│     l_utinyint(#2, 2)     │
+│             #3            │
+│             #4            │
+│             #5            │
+│             #6            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│__internal_decompress_integ│
+│    ral_bigint(#0, 2025)   │
+│__internal_decompress_integ│
+│     ral_bigint(#1, 8)     │
+│__internal_decompress_integ│
+│     ral_bigint(#2, 2)     │
+│             #3            │
+│             #4            │
+│             #5            │
+│             #6            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│       HASH_GROUP_BY       │
+│    ────────────────────   │
+│          Groups:          │
+│             #0            │
+│             #1            │
+│             #2            │
+│             #3            │
+│                           │
+│        Aggregates:        │
+│          max(#4)          │
+│          min(#5)          │
+│        count_star()       │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│            anio           │
+│            mes            │
+│            dia            │
+│        tipo_sensor        │
+│           valor           │
+│           valor           │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         PROJECTION        │
+│    ────────────────────   │
+│             #0            │
+│__internal_compress_integra│
+│    l_utinyint(#1, 2025)   │
+│__internal_compress_integra│
+│     l_utinyint(#2, 8)     │
+│__internal_compress_integra│
+│     l_utinyint(#3, 2)     │
+│             #4            │
+│                           │
+│                           │
+│                           │
+│           0 rows          │
+│           0.00s           │
+└─────────────┬─────────────┘
+┌─────────────┴─────────────┐
+│         HASH_JOIN         │
+│    ────────────────────   │
+│      Join Type: INNER     │
+│                           │
+│        Conditions:        │
+│ sensor_sk = CAST(sensor_sk│
+│         AS BIGINT)        ├───────────────────────────────────────────┐
+│                           │                                           │
+│                           │                                           │
+│                           │                                           │
+│           0 rows          │                                           │
+│           0.00s           │                                           │
+└─────────────┬─────────────┘                                           │
+┌─────────────┴─────────────┐                             ┌─────────────┴─────────────┐
+│         HASH_JOIN         │                             │         TABLE_SCAN        │
+│    ────────────────────   │                             │    ────────────────────   │
+│      Join Type: INNER     │                             │         Function:         │
+│                           │                             │        READ_PARQUET       │
+│        Conditions:        │                             │                           │
+│   tiempo_sk = tiempo_sk   │                             │        Projections:       │
+│                           │                             │         sensor_sk         │
+│                           │                             │        tipo_sensor        │
+│                           │                             │                           │
+│                           ├──────────────┐              │    Total Files Read: 1    │
+│           0.00s           │              │              │                           │
+│                           │              │              │        Filename(s):       │
+│                           │              │              │ lakehouse/gold/dim_sensor │
+│                           │              │              │          .parquet         │
+│                           │              │              │                           │
+│                           │              │              │                           │
+│                           │              │              │                           │
+│           0 rows          │              │              │           1 row           │
+│          (0.00s)          │              │              │           0.00s           │
+└─────────────┬─────────────┘              │              └───────────────────────────┘
+┌─────────────┴─────────────┐┌─────────────┴─────────────┐
+│         TABLE_SCAN        ││        EMPTY_RESULT       │
+│    ────────────────────   ││    ────────────────────   │
+│         Function:         ││                           │
+│        READ_PARQUET       ││                           │
+│                           ││           0.00s           │
+│        Projections:       ││                           │
+│         tiempo_sk         ││                           │
+│         sensor_sk         ││                           │
+│           valor           ││                           │
+│                           ││                           │
+│      Dynamic Filters:     ││                           │
+│        sensor_sk=1        ││                           │
+│                           ││                           │
+│                           ││                           │
+│                           ││                           │
+│         1,000 rows        ││           0 rows          │
+│           0.00s           ││          (0.00s)          │
+└───────────────────────────┘└───────────────────────────┘
+
+
+
+================================================================================
+RESULTADOS DE OPTIMIZACIÓN
+================================================================================
+
+Q1 - Promedio mensual 2024
+Antes   : 19.88 ms
+Después : 2.80 ms
+Factor  : 7.11x
+Mínimo  : 2.55 ms
+Máximo  : 3.39 ms
+
+Q2 - Alertas criticas por sensor
+Antes   : 13.59 ms
+Después : 2.91 ms
+Factor  : 4.67x
+Mínimo  : 2.73 ms
+Máximo  : 3.18 ms
+
+Q3 - Resumen diario junio 2023
+Antes   : 21.92 ms
+Después : 4.55 ms
+Factor  : 4.82x
+Mínimo  : 4.27 ms
+Máximo  : 4.90 ms
+
