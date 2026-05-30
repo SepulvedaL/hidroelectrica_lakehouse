@@ -165,19 +165,25 @@ Tabla operacional que almacena las lecturas generadas por cada sensor.
 hidroelectrica_lakehouse/
 │
 ├── lakehouse/
+│   ├── analyze/
 │   ├── bronze/
+│   ├── dashboard/
 │   ├── silver/
 │   └── gold/
 │
 ├── scripts/
-│   ├── bronze.py
-│   ├── silver.py
-│   ├── gold.py
+│   ├── benchmark.py
+│   ├── dashboard.py
+│   ├── data_cassandra.py
+│   ├── diagnostico_baseline.py
+│   ├── extract.py
+│   ├── intervenciones.py
 │   ├── queries_gold.py
-│   ├── queries_cassandra.py
-│   └── main.py
+│   ├── transform_gold.py
+│   └── transform_silver.py
 │
-├── dashboards/
+├── .env
+├── main.py
 ├── README.md
 └── requirements.txt
 ```
@@ -434,26 +440,35 @@ Se construyó un dashboard básico utilizando DuckDB y consultas analíticas.
 pip install -r requirements.txt
 ```
 
-## Ejecutar generador de datos
+## Ejecución Automática desde el Pipeline
 
-```bash
-python data_cassandra.py
-```
-
-## Ejecutar pipeline completo
+El archivo principal:
 
 ```bash
 python main.py
 ```
 
----
+ejecuta automáticamente:
 
-### Para revisar los diagnosticos de consultas debemos ejecutar de forma indepediente cada archivo, dado que no esta incluido en el pipeline
-
-```bash
-python diagnostico_baseline.py
-python intervenciones.py
+```text
+1. Creación de 600,000 registros para Cassandra
+2. Extracción desde Cassandra
+3. Capa Bronze
+4. Capa Silver
+5. Capa Gold
+6. Dashboard analítico
+7. EXPLAIN ANALYZE Baseline
+8. Intervenciones de optimización
+9. EXPLAIN ANALYZE Optimizado
 ```
+
+Al finalizar la ejecución, toda la evidencia técnica queda almacenada en:
+
+```text
+lakehouse/analyze/
+```
+
+permitiendo documentar y comparar el comportamiento del motor analítico antes y después de las optimizaciones realizadas.
 
 ### Integrantes
 
