@@ -8,12 +8,15 @@ SCRIPTS_DIR = Path("scripts")
 
 # Orden del pipeline
 PIPELINE = [
+    "data_cassandra.py",
     "extract.py",
     "transform_silver.py",
     "transform_gold.py",
     "queries_gold.py",
     "benchmark.py",
-    "dashboard.py"
+    "dashboard.py",
+    "diagnostico_baseline.py",
+    "intervenciones.py"
 ]
 
 # ── FUNCIONES ───────────────────────────────────────────
